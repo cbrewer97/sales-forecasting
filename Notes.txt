@@ -1,0 +1,15 @@
+Make periodogram of sales
+
+Investigate response of sales to oil prices
+--Check lag response
+
+Check response to holidays and events
+--lag/lead response
+
+transactions.csv just counts the total number of transactions per day
+
+check proportions of family (automotive, baby care, etc.)
+--Check periodicity of each of these
+--response to oil and holidays
+--average these predictions and compare to the calculated response fo all sales. If it matches well, it should be a good method
+
