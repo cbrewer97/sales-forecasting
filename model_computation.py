@@ -21,19 +21,27 @@ from sklearn.linear_model import LinearRegression
 #transactions.head()
 
 def str_date(x):
+    """Convenience method for converting string of type YYYY-MM-DD to date"""
     return datetime.strptime(x, '%Y-%m-%d').date()
 
 def linreg_from_dict(values):
+    """Converts dict to a LinearRegression object from sklearn by accessing the
+    dictionary keys coef and intercept"""
     lm=LinearRegression()
     lm.coef_=np.reshape(np.asarray(values['coef']),(-1,))
     lm.intercept_=values['intercept']
     return lm
 
 def linreg_to_dict(lm):
+    """  Converts LinearRegression object to dict by storing intercept_ and coeff_
+    attributes in the dict using coef and intercept as keys"""
     model_dict={'coef':lm.coef_, 'intercept':lm.intercept_}
     return model_dict
 
 def load_sales():
+    """Tries to load sales_train dataframe from a feather file. Otherwise, it will
+    load the data from csv file, and then save to feather file. Returns the
+    sales_train dataframe"""
     try:
         sales_train=pd.read_feather('./sales_train.ftr')
         print('Loaded sales_train dataframe.')
@@ -48,6 +56,10 @@ def load_sales():
     return sales_train
 
 def load_models(sales_train):
+    """Requires argument of sales_train dataframe (it uses this to create the
+    MultiIndex). Tries to load models dataframe from feather and set multi-index
+    on year, family, and store_nbr. Otherwise, creates empty dataframe
+    and saves to feather. Returns the models dataframe"""
     try:
         models=pd.read_feather('models.ftr')
         models=models.set_index(['year','family','store_nbr'])
