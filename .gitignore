@@ -2,3 +2,4 @@
 sales_train.pkl
 *.csv
 *.ftr
+.ipynb_checkpoints/model_computation-checkpoint.py

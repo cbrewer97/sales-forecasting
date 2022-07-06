@@ -13,6 +13,8 @@ import time
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from scipy.fft import rfft, rfftfreq, irfft
+
 
 #holidays=pd.read_csv('holidays_events.csv')
 #oil=pd.read_csv('oil.csv')
@@ -120,12 +122,74 @@ def compute_linear_models(sales_train, models):
             models.reset_index().to_feather('models.ftr')
             #models.to_feather('models_backup.ftr')
             
+def truncate_fourier(fourier,n):
+    """Keeps only the coefficients with magnitude greater
+    than or equal to the n-th highest magnitude. I.e. if the
+    n-th highest magnitude appears more than once, all coefficients
+    with that magnitude are kept. If all magnitudes are unique,
+    only n coefficients are kept."""
+    for i,coef in enumerate(fourier):
+        if abs(coef)<np.flip(np.sort(abs(fourier)))[n-1]:
+            fourier[i]=0
+
+def compute_fft(sales_train, models):
+    
+    if 'fourier' not in models.columns:
+        print('models dataframe has no column \'fourier\'.')
+        models['fourier']=np.nan
+        print('Created column: fourier')
         
+    indices=models.index[models['fourier'].isnull()].values
+    counter=0
+    start=time.time()
+    for index in indices:
+        counter+=1
+        year=index[0]
+        family=index[1]
+        store_nbr=index[2]
+        
+        years_bool=sales_train['date'].apply(lambda x: x.year)==year
+        store_bool=sales_train['store_nbr']==store_nbr
+        family_bool=sales_train['family']==family
+        
+        df=sales_train[years_bool & store_bool & family_bool]
+        #X=df['date']
+        #X=X.apply(lambda x: x.timetuple().tm_yday)
+        #X=X.values.reshape(-1,1)
+        y=df['sales'].values
+        
+        fourier=rfft(y)
+        #Instead of saving only the truncated coefficients,
+        #we will save all coefficients. Truncation will
+        #take place in the prediction step
+        
+        real=fourier.real
+        imag=fourier.imag
+        fourier_dict={'real':real, 'imag':imag}
+        
+        #Have to wrap dict in list or else assignment doesn't work
+        #I.e. pandas tries to iterate the dict instead of assigning 
+        # to single cell
+        models.at[index,'fourier']=[fourier_dict]
+        
+        
+        if counter==10:
+            end=time.time()
+            el_time=end-start
+            start=time.time()
+            counter=0
+            print('Completed 10 more rfft')
+            print('  Elapsed time: ', el_time)
+            print('  Average time per model: ', round(el_time/10,3))
+            models.reset_index().to_feather('models.ftr')
+            #models.to_feather('models_backup.ftr')
+    
+    
 
 def main():
     sales_train=load_sales()
     models=load_models(sales_train)
     compute_linear_models(sales_train, models)
     
-main()
+#main()
         
