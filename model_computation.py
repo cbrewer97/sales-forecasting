@@ -192,7 +192,10 @@ def compute_fft(sales_train, models):
             #models.to_feather('models_backup.ftr')
 
 def lm_predict(sales_train, models):
-    for index in models.index.values[0:10]:
+    counter=0
+    start=time.time()
+    for index in models.index.values:
+        counter+=1
         values_dict=models.loc[index]['model'][0] #the [0] is necessary since the dict is wrapped in a list
         lm=linreg_from_dict(values_dict) 
         
@@ -224,10 +227,22 @@ def lm_predict(sales_train, models):
         #sales_train['date']=sales_train['date'].astype('datetime64')
         
         #sales_train=pd.merge(sales_train, pred_df,how='left', left_on=['date','family','store_nbr'], right_on=['date','family','store_nbr'])
-        sales_train.loc[years_bool & family_bool & store_bool,'lm_pred']=pred_df['lm_pred']
-        print(sales_train.head())
-        
-    return sales_train
+        #Need to cast to list so that it will assign to whole slice. Leaving as a series causes only one cell to get assigned
+        sales_train.loc[years_bool & family_bool & store_bool,'lm_pred']=pred_df['lm_pred'].tolist() 
+        print(sales_train.loc[years_bool & family_bool & store_bool,'lm_pred'])
+        print(pred_df['lm_pred'])
+        if counter==10:
+            end=time.time()
+            el_time=end-start
+            start=time.time()
+            counter=0
+            print('Completed 10 more rfft')
+            print('  Elapsed time: ', el_time)
+            print('  Average time per model: ', round(el_time/10,3))
+            sales_train.to_feather('sales_train.ftr')
+            
+    sales_train.to_feather('sales_train.ftr')
+    print('Completed all predictions.')
         
         
 
