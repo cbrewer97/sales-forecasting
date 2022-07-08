@@ -8,7 +8,7 @@ Created on Tue Jun 28 15:25:22 2022
 import pandas as pd
 import numpy as np
 
-from datetime import datetime
+from datetime import datetime,timedelta
 import time
 
 from sklearn.model_selection import train_test_split
@@ -122,6 +122,13 @@ def compute_linear_models(sales_train, models):
             models.reset_index().to_feather('models.ftr')
             #models.to_feather('models_backup.ftr')
             
+def remove_linear_trend():
+    return 0
+    
+def restore_linear_trend():
+    return 0
+
+            
 def truncate_fourier(fourier,n):
     """Keeps only the coefficients with magnitude greater
     than or equal to the n-th highest magnitude. I.e. if the
@@ -183,7 +190,47 @@ def compute_fft(sales_train, models):
             print('  Average time per model: ', round(el_time/10,3))
             models.reset_index().to_feather('models.ftr')
             #models.to_feather('models_backup.ftr')
-    
+
+def lm_predict(sales_train, models):
+    for index in models.index.values[0:10]:
+        values_dict=models.loc[index]['model'][0] #the [0] is necessary since the dict is wrapped in a list
+        lm=linreg_from_dict(values_dict) 
+        
+        year=index[0]
+        family=index[1]
+        store_nbr=index[2]
+        
+        years_bool=sales_train['date'].apply(lambda x: x.year)==year
+        store_bool=sales_train['store_nbr']==store_nbr
+        family_bool=sales_train['family']==family
+        
+        df=sales_train[years_bool & store_bool & family_bool]
+        X=df['date']
+        X=X.apply(lambda x: x.timetuple().tm_yday)
+        X=X.values.reshape(-1,1)
+        
+        y_pred=lm.predict(X)
+        
+        X=pd.DataFrame(X)
+        y_pred=pd.DataFrame(y_pred)
+        pred_df=X.join(y_pred,lsuffix='left', rsuffix='right')
+        pred_df.rename(columns={'0left':'date', '0right':'lm_pred'}, inplace=True)
+        #print(pred_df.head())
+        pred_df['date']=pred_df['date'].apply(lambda x: datetime(year,1,1)+timedelta(x-1))
+        pred_df['family']=family
+        pred_df['store_nbr']=store_nbr
+        #print(pred_df['date'].info())
+        
+        #sales_train['date']=sales_train['date'].astype('datetime64')
+        
+        #sales_train=pd.merge(sales_train, pred_df,how='left', left_on=['date','family','store_nbr'], right_on=['date','family','store_nbr'])
+        sales_train.loc[years_bool & family_bool & store_bool,'lm_pred']=pred_df['lm_pred']
+        print(sales_train.head())
+        
+    return sales_train
+        
+        
+
     
 
 def main():
