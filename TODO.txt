@@ -1,0 +1,12 @@
+TODO            |
+=================
+- Truncate some of the coefficients on storage. No reason to take a lot of space on data that will never be used
+- See if I can simplify the way that the data gets stored to feather
+- Add function to detrend and retrend the data using linear model before calculating fourier
+
+Added function lm_predict()
+- need to clean it up
+- need to add feature for saving to disk
+=================
+Completed       |
+=================
