@@ -191,10 +191,28 @@ def compute_fft(sales_train, models):
             models.reset_index().to_feather('models.ftr')
             #models.to_feather('models_backup.ftr')
 
+def to_year(array):
+    for index in array:
+        index[0]=index[0].year
+    return np.array(array)
+
+def get_null_indices_sales_train_lm_pred(sales_train):
+    indices=sales_train[sales_train['lm_pred'].isnull()]
+    indices=indices[['date','family','store_nbr']]
+    indices=indices.values
+    indices=to_year(indices)
+    indices=pd.DataFrame(indices)
+    indices=indices.drop_duplicates()
+    indices=indices.values
+    indices=[tuple(l) for l in indices]
+    return indices
+
 def lm_predict(sales_train, models):
     counter=0
     start=time.time()
-    for index in models.index.values:
+    #indices=models.index[models['lm_pred'].isnull()].values
+    indices=get_null_indices_sales_train_lm_pred(sales_train)
+    for index in indices:
         counter+=1
         values_dict=models.loc[index]['model'][0] #the [0] is necessary since the dict is wrapped in a list
         lm=linreg_from_dict(values_dict) 
@@ -229,8 +247,8 @@ def lm_predict(sales_train, models):
         #sales_train=pd.merge(sales_train, pred_df,how='left', left_on=['date','family','store_nbr'], right_on=['date','family','store_nbr'])
         #Need to cast to list so that it will assign to whole slice. Leaving as a series causes only one cell to get assigned
         sales_train.loc[years_bool & family_bool & store_bool,'lm_pred']=pred_df['lm_pred'].tolist() 
-        print(sales_train.loc[years_bool & family_bool & store_bool,'lm_pred'])
-        print(pred_df['lm_pred'])
+        #print(sales_train.loc[years_bool & family_bool & store_bool,'lm_pred'])
+        #print(pred_df['lm_pred'])
         if counter==10:
             end=time.time()
             el_time=end-start
