@@ -13,7 +13,7 @@ import time
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from scipy.fft import rfft, rfftfreq, irfft
+from scipy.fft import rfft, rfftfreq, irfft, fft, ifft, fftfreq
 
 
 #holidays=pd.read_csv('holidays_events.csv')
@@ -254,7 +254,7 @@ def lm_predict(sales_train, models):
             el_time=end-start
             start=time.time()
             counter=0
-            print('Completed 10 more rfft')
+            print('Completed 10 more lm_pred')
             print('  Elapsed time: ', el_time)
             print('  Average time per model: ', round(el_time/10,3))
             sales_train.to_feather('sales_train.ftr')
@@ -262,9 +262,43 @@ def lm_predict(sales_train, models):
     sales_train.to_feather('sales_train.ftr')
     print('Completed all predictions.')
         
-        
-
     
+def subtract_lm_pred(sales_train):
+    sales_train['sales_minus_lm_pred']=sales_train['sales']-sales_train['lm_pred']
+    
+def get_year_family_store(sales_train, year, family, store_nbr):
+    years_bool=sales_train['date'].apply(lambda x: x.year)==year
+    family_bool=sales_train['family']==family
+    store_bool=sales_train['store_nbr']==store_nbr
+    return sales_train[years_bool & family_bool & store_bool]
+
+def get_indices_all_zero():
+    return 0
+
+def get_indices_nonzero():
+    return 0
+
+def my_ifft(fourier):
+    original=[]
+    N=len(fourier)
+    for n in range(N):
+        sample=0
+        for k in range(N):
+            sample+=np.exp(2*np.pi*1j*k*n/N)*fourier[k]
+        sample=sample/N
+        original.append(sample)
+    return original
+
+def fft_pred(fourier, domain):
+    output=[]
+    N=len(fourier)
+    for n in range(len(domain)):
+        sample=0
+        for k in range(N):
+            sample+=np.exp(2*np.pi*1j*k*n/N)*fourier[k]
+        sample=sample/N
+        output.append(sample)
+    return np.array(output).real
 
 def main():
     sales_train=load_sales()
